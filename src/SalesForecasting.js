@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import { Line } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, LineElement, PointElement, Title, Tooltip, Legend } from 'chart.js';
+import { Chart as ChartJS, CategoryScale, LinearScale, LineElement, PointElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 
 // Register the necessary components
 ChartJS.register(
@@ -11,7 +11,8 @@ ChartJS.register(
   PointElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 const SalesForecasting = ({ data }) => {
@@ -25,7 +26,7 @@ const SalesForecasting = ({ data }) => {
 
     const salesDates = data.map((row) => {
       const date = new Date(row.sales_date);
-      return !isNaN(date) ? date.getMonth() + 1 : null; // Extract month as a numeric value
+      return !isNaN(date) ? date.getMonth() + 1 : null;
     });
 
     const products = [...new Set(data.map((row) => row.product_description))];
@@ -88,19 +89,21 @@ const SalesForecasting = ({ data }) => {
   };
 
   const visualizeResults = (predictions) => {
-    const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'];
+    const colors = ['rgba(255, 99, 132, 0.5)', 'rgba(54, 162, 235, 0.5)', 'rgba(75, 192, 192, 0.5)'];
+    const borderColors = ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)', 'rgba(75, 192, 192, 1)'];
     const products = [...new Set(predictions.map((p) => p.product))];
     const datasets = products.map((product, index) => ({
       label: product,
       data: predictions
         .filter((p) => p.product === product)
         .map((p) => p.predicted),
-      borderColor: colors[index % colors.length],
-      backgroundColor: colors[index % colors.length] + '80', // Transparent fill color
-      tension: 0.4, // Smooth lines
-      pointRadius: 5, // Larger points
-      pointHoverRadius: 7, // Points grow on hover
-      fill: false,
+      borderColor: borderColors[index % borderColors.length],
+      backgroundColor: colors[index % colors.length],
+      borderDash: [5, 5], // Dashed lines
+      tension: 0.4, // Smooth curves
+      fill: true, // Enable gradient fill
+      pointRadius: 6, // Larger points
+      pointHoverRadius: 8, // Bigger hover effect
     }));
 
     setChartData({
@@ -125,32 +128,33 @@ const SalesForecasting = ({ data }) => {
                   labels: {
                     font: {
                       size: 14,
+                      family: "'Roboto', sans-serif",
                     },
                   },
                 },
                 title: {
                   display: true,
-                  text: 'Sales Forecast',
+                  text: 'Sales Forecast with Gradient Style',
                   font: {
                     size: 18,
-                  },
-                },
-                tooltip: {
-                  callbacks: {
-                    label: (context) =>
-                      `${context.dataset.label}: ${context.raw.toFixed(2)}`,
+                    family: "'Poppins', sans-serif",
                   },
                 },
               },
               scales: {
                 x: {
                   grid: {
-                    display: false,
+                    display: true,
+                    color: 'rgba(200, 200, 200, 0.5)',
                   },
                 },
                 y: {
                   grid: {
-                    color: '#f3f3f3',
+                    display: true,
+                    color: 'rgba(200, 200, 200, 0.5)',
+                  },
+                  ticks: {
+                    callback: (value) => `$${value.toFixed(2)}`, // Add a dollar sign to Y-axis
                   },
                 },
               },

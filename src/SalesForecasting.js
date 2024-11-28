@@ -1,7 +1,17 @@
 import React, { useState } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import { Line } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, LineElement, PointElement, Title, Tooltip, Legend, Filler } from 'chart.js';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from 'chart.js';
 
 // Register the necessary components
 ChartJS.register(
@@ -19,6 +29,8 @@ const SalesForecasting = ({ data }) => {
   const [chartData, setChartData] = useState(null);
 
   const preprocessData = () => {
+    console.log('Raw input data:', data);
+
     if (!data || data.length === 0) {
       console.error('Data is empty or undefined');
       return { inputs: [], outputs: [], productMapping: {} };
@@ -34,14 +46,23 @@ const SalesForecasting = ({ data }) => {
 
     const quantities = data.map((row) => parseFloat(row.quantity_sold) || 0);
 
-    const inputs = data.map((row, i) => {
-      if (salesDates[i] !== null && productMapping[row.product_description] !== undefined) {
-        return [salesDates[i], productMapping[row.product_description]];
-      }
-      return null;
-    }).filter((input) => input !== null);
+    const inputs = data
+      .map((row, i) => {
+        if (
+          salesDates[i] !== null &&
+          productMapping[row.product_description] !== undefined
+        ) {
+          return [salesDates[i], productMapping[row.product_description]];
+        }
+        return null;
+      })
+      .filter((input) => input !== null);
 
     const outputs = quantities.filter((q, i) => inputs[i] !== null);
+
+    console.log('Processed inputs:', inputs);
+    console.log('Processed outputs:', outputs);
+    console.log('Product mapping:', productMapping);
 
     return { inputs, outputs, productMapping };
   };
@@ -65,8 +86,10 @@ const SalesForecasting = ({ data }) => {
     const xs = tf.tensor2d(inputs, [inputs.length, inputs[0].length]);
     const ys = tf.tensor2d(outputs, [outputs.length, 1]);
 
+    console.log('Training the model...');
     const model = buildModel();
     await model.fit(xs, ys, { epochs: 50 });
+    console.log('Model training complete.');
 
     const predictions = [];
     for (let i = 1; i <= 6; i++) {
@@ -84,6 +107,8 @@ const SalesForecasting = ({ data }) => {
         });
       });
     }
+
+    console.log('Predictions:', predictions);
 
     visualizeResults(predictions);
   };

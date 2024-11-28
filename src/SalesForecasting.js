@@ -17,16 +17,12 @@ ChartJS.register(
 const SalesForecasting = ({ data }) => {
   const [chartData, setChartData] = useState(null);
 
-  // Preprocess the data
   const preprocessData = () => {
     if (!data || data.length === 0) {
       console.error('Data is empty or undefined');
       return { inputs: [], outputs: [], productMapping: {} };
     }
 
-    console.log('Raw input data:', data);
-
-    // Map dates and products to numeric representations
     const salesDates = data.map((row) => {
       const date = new Date(row.sales_date);
       return !isNaN(date) ? date.getMonth() + 1 : null; // Extract month as a numeric value
@@ -37,24 +33,18 @@ const SalesForecasting = ({ data }) => {
 
     const quantities = data.map((row) => parseFloat(row.quantity_sold) || 0);
 
-    // Validate and prepare inputs and outputs
     const inputs = data.map((row, i) => {
       if (salesDates[i] !== null && productMapping[row.product_description] !== undefined) {
         return [salesDates[i], productMapping[row.product_description]];
       }
-      return null; // Skip invalid rows
+      return null;
     }).filter((input) => input !== null);
 
     const outputs = quantities.filter((q, i) => inputs[i] !== null);
 
-    console.log('Processed inputs:', inputs);
-    console.log('Processed outputs:', outputs);
-    console.log('Product mapping:', productMapping);
-
     return { inputs, outputs, productMapping };
   };
 
-  // Build the TensorFlow.js model
   const buildModel = () => {
     const model = tf.sequential();
     model.add(tf.layers.dense({ units: 10, activation: 'relu', inputShape: [2] }));
@@ -63,7 +53,6 @@ const SalesForecasting = ({ data }) => {
     return model;
   };
 
-  // Train the model and make predictions
   const trainAndPredict = async () => {
     const { inputs, outputs, productMapping } = preprocessData();
 
@@ -72,16 +61,12 @@ const SalesForecasting = ({ data }) => {
       return;
     }
 
-    // Convert data to tensors
     const xs = tf.tensor2d(inputs, [inputs.length, inputs[0].length]);
     const ys = tf.tensor2d(outputs, [outputs.length, 1]);
 
     const model = buildModel();
-    console.log('Training the model...');
     await model.fit(xs, ys, { epochs: 50 });
-    console.log('Model training complete.');
 
-    // Generate predictions
     const predictions = [];
     for (let i = 1; i <= 6; i++) {
       Object.keys(productMapping).forEach((product) => {
@@ -99,19 +84,22 @@ const SalesForecasting = ({ data }) => {
       });
     }
 
-    console.log('Predictions:', predictions);
     visualizeResults(predictions);
   };
 
-  // Visualize predictions with Chart.js
   const visualizeResults = (predictions) => {
+    const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'];
     const products = [...new Set(predictions.map((p) => p.product))];
-    const datasets = products.map((product) => ({
+    const datasets = products.map((product, index) => ({
       label: product,
       data: predictions
         .filter((p) => p.product === product)
         .map((p) => p.predicted),
-      borderColor: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+      borderColor: colors[index % colors.length],
+      backgroundColor: colors[index % colors.length] + '80', // Transparent fill color
+      tension: 0.4, // Smooth lines
+      pointRadius: 5, // Larger points
+      pointHoverRadius: 7, // Points grow on hover
       fill: false,
     }));
 
@@ -134,10 +122,36 @@ const SalesForecasting = ({ data }) => {
               plugins: {
                 legend: {
                   position: 'top',
+                  labels: {
+                    font: {
+                      size: 14,
+                    },
+                  },
                 },
                 title: {
                   display: true,
                   text: 'Sales Forecast',
+                  font: {
+                    size: 18,
+                  },
+                },
+                tooltip: {
+                  callbacks: {
+                    label: (context) =>
+                      `${context.dataset.label}: ${context.raw.toFixed(2)}`,
+                  },
+                },
+              },
+              scales: {
+                x: {
+                  grid: {
+                    display: false,
+                  },
+                },
+                y: {
+                  grid: {
+                    color: '#f3f3f3',
+                  },
                 },
               },
             }}
